@@ -31,6 +31,7 @@
 #include <curses.h>
 #include <boost/program_options.hpp>
 #include <boost/regex.hpp>
+#include <boost/function.hpp>
 
 std::string formindex(const std::string &base, int index)
 {
@@ -231,16 +232,12 @@ bool CompareName(const ViewData &lhs, const ViewData &rhs)
     return lhs.m_name < rhs.m_name;
 }
 
+typedef boost::function<bool (const ViewData &lhs, const ViewData &rhs)> SortBy;
+
 
 class Engine
 {
 public:
-    enum SortBy {
-	sortby_delta,
-	sortby_value,
-	sortby_name
-    };
-
     Engine(unsigned int period, const std::string &filter, char sortby)
 	: m_period(period), m_filter("*")
 	{
@@ -248,13 +245,13 @@ public:
 
 	    switch (sortby) {
 		case 'n':
-		    m_sortby = sortby_name;
+		    m_sortby = CompareName;
 		    break;
 		case 'v':
-		    m_sortby = sortby_value;
+		    m_sortby = CompareValue;
 		    break;
 		case 'd':
-		    m_sortby = sortby_delta;
+		    m_sortby = CompareDelta;
 		    break;
 		default:
 		    throw std::runtime_error("unknown sort option");
@@ -309,17 +306,7 @@ private:
 	    }
 	    
 	    // Sort the data according to the configuration
-	    switch (m_sortby) {
-		case sortby_delta:
-		    view.sort(CompareDelta);
-		    break;
-		case sortby_value:
-		    view.sort(CompareValue);
-		    break;
-		case sortby_name:
-		    view.sort(CompareName);
-		    break;
-	    }
+	    view.sort(m_sortby);
 	    
 	    // render the view data to the screen
 	    {
@@ -330,6 +317,7 @@ private:
 		getmaxyx(stdscr,row,col);
 		clear();
 		
+		// Draw header
 		attron(A_BOLD);
 		mvprintw(0,0,  "Name");
 		mvprintw(0,40, "Value");
@@ -341,6 +329,7 @@ private:
 		}
 		attroff(A_BOLD);
 		
+		// Draw data
 		for (iter = view.begin();
 		     iter != view.end() && i < row;
 		     ++iter, ++i)
