@@ -238,8 +238,9 @@ typedef boost::function<bool (const ViewData &lhs, const ViewData &rhs)> SortBy;
 class Engine
 {
 public:
-    Engine(unsigned int period, const std::string &filter, char sortby)
-	: m_period(period), m_filter(filter)
+    Engine(unsigned int period, const std::string &ifilter,
+	   const std::string &xfilter,char sortby)
+	: m_period(period), m_ifilter(ifilter), m_xfilter(xfilter)
 	{
 	    initscr();
 
@@ -287,10 +288,17 @@ private:
 		    boost::regex e;
 		    boost::cmatch what;
 
-		    e.assign(m_filter, boost::regex_constants::basic);
+		    e.assign(m_ifilter, boost::regex_constants::basic);
             
+		    // check for "include" filter matches
 		    if (!boost::regex_search(curr->first.c_str(), what, e))
 			continue;
+		    else {
+			// .. and then for "exclude" matches
+			e.assign(m_xfilter, boost::regex_constants::basic);
+			if (boost::regex_search(curr->first.c_str(), what, e))
+			    continue;
+		    }
 
 		    Snapshot::iterator prev(m_base.find(curr->first));
 		    
@@ -352,16 +360,21 @@ private:
     
     unsigned int m_period;
     Snapshot     m_base;
-    std::string  m_filter;
+    std::string  m_ifilter;
+    std::string  m_xfilter;
     SortBy       m_sortby;
 };
 
 namespace po = boost::program_options;
 
+#define IFILTER_DEFAULT ".*"
+#define XFILTER_DEFAULT "^$"
+
 int main(int argc, char **argv)
 {
     unsigned int period(1);
-    std::string filter(".*");
+    std::string ifilter(IFILTER_DEFAULT);
+    std::string xfilter(XFILTER_DEFAULT);
     char sortby('d');
 
     po::options_description desc("Allowed options");
@@ -369,8 +382,10 @@ int main(int argc, char **argv)
 	("help,h", "produces help message")
 	("period,p", po::value<unsigned int>(&period),
 	 "refresh period (default=1s)")
-	("filter,f", po::value<std::string>(&filter),
-	 "reg-ex filter (default=*)")
+	("include,i", po::value<std::string>(&ifilter),
+	 "reg-ex inclusive filter (default=\"" IFILTER_DEFAULT "\")")
+	("exclude,x", po::value<std::string>(&xfilter),
+	 "reg-ex exclusive filter (default=\"" XFILTER_DEFAULT "\")")
 	("sort,s", po::value<char>(&sortby),
 	 "sort-by: n=name, v=value, d=delta (default='d')")
 	;
@@ -379,7 +394,12 @@ int main(int argc, char **argv)
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
-    Engine e(period, filter, sortby);
+    if (vm.count("help")) {
+	std::cerr << desc << std::endl;
+	return -1;
+    }
+
+    Engine e(period, ifilter, xfilter, sortby);
     
     e.Run();
 
