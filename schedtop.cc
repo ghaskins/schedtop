@@ -338,9 +338,9 @@ private:
 		    move(i, 0);
 		    printw("%s", iter->m_name.c_str());
 		    move(i, 40);
-		    printw("%ld", iter->m_val);
+		    printw("%llu", iter->m_val);
 		    move(i, 60);
-		    printw("%ld", iter->m_delta);
+		    printw("%llu", iter->m_delta);
 		}
 	    }
 	    
