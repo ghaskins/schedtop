@@ -1,3 +1,26 @@
+// schedtop
+//
+// Copyright (c) 2008, Novell
+//
+// Author: Gregory Haskins <ghaskins@novell.com>
+//
+// schedtop is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License v2 
+// as published by the Free Software Foundation.
+// 
+// schedtop is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with schedtop; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+
+// compile with:
+//    g++ schedtop.cc -g -lncurses -lboost_program_options -lboost_regex -o schedtop
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -7,6 +30,7 @@
 #include <stdexcept>
 #include <curses.h>
 #include <boost/program_options.hpp>
+#include <boost/regex.hpp>
 
 std::string formindex(const std::string &base, int index)
 {
@@ -257,16 +281,25 @@ private:
 	    Snapshot now;
 	    ViewList view;
 	    
+	    // Generate the view data
 	    {
 		Snapshot::iterator curr;
 		
-		// Generate the view data
 		for (curr = now.begin(); curr != now.end(); ++curr)
 		{
+		    boost::regex e(m_filter, boost::regex::grep);
+		    boost::cmatch what;
+            
+#if 0
+		    if (!boost::regex_search(curr->first.c_str(), what, e))
+			continue;
+#endif
+
 		    Snapshot::iterator prev(m_base.find(curr->first));
 		    
 		    if (prev == m_base.end())
-			throw std::runtime_error("error finding " + curr->first);
+			throw std::runtime_error("error finding "
+						 + curr->first);
 		    
 		    ViewData data(curr->first, curr->second,
 				  curr->second - prev->second);
