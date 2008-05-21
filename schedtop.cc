@@ -5,6 +5,7 @@
 #include <list>
 #include <map>
 #include <stdexcept>
+#include <curses.h>
 
 std::string formindex(const std::string &base, int index)
 {
@@ -215,7 +216,13 @@ public:
 	sortby_name
     };
 
-    Engine() : m_period(1), m_filter("*"), m_sortby(sortby_delta) {}
+    Engine() : m_period(1), m_filter("*"), m_sortby(sortby_delta) {
+	initscr();
+    }
+
+    ~Engine() {
+	endwin();
+    }
 
     void Run() {
 	do {
@@ -263,15 +270,26 @@ private:
 
 	// render the view data to the screen
 	{
+	    int row,col;
+	    int i(0);
 	    ViewList::iterator iter;
 
-	    for (iter = view.begin(); iter != view.end(); ++iter)
+	    getmaxyx(stdscr,row,col);
+	    clear();
+
+	    for (iter = view.begin(); iter != view.end() && i<row; ++iter, ++i)
 	    {
-		std::cout << iter->m_name << "\t"
-			  << iter->m_val << "\t"
-			  << iter->m_delta << std::endl;
+		
+		move(i, 0);
+		printw("%s", iter->m_name.c_str());
+		move(i, 40);
+		printw("%ld", iter->m_val);
+		move(i, 60);
+		printw("%ld", iter->m_delta);
 	    }
 	}
+
+	refresh();
 
 	// Update base with new data
 	m_base = now;
