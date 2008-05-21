@@ -189,6 +189,11 @@ struct ViewData
 
 typedef std::list<ViewData> ViewList;
 
+bool CompareDelta(const ViewData &lhs, const ViewData &rhs)
+{
+    return lhs.m_delta > rhs.m_delta;
+}
+
 class Engine
 {
 public:
@@ -225,7 +230,8 @@ private:
 	    }
 	}
 
-	// Now sort by delta (FIXME)
+	// Now sort by delta
+	view.sort(CompareDelta);
 
 	// render the view data to the screen
 	{
