@@ -239,7 +239,7 @@ class Engine
 {
 public:
     Engine(unsigned int period, const std::string &filter, char sortby)
-	: m_period(period), m_filter("*")
+	: m_period(period), m_filter(filter)
 	{
 	    initscr();
 
@@ -284,13 +284,13 @@ private:
 		
 		for (curr = now.begin(); curr != now.end(); ++curr)
 		{
-		    boost::regex e(m_filter, boost::regex::grep);
+		    boost::regex e;
 		    boost::cmatch what;
+
+		    e.assign(m_filter, boost::regex_constants::basic);
             
-#if 0
 		    if (!boost::regex_search(curr->first.c_str(), what, e))
 			continue;
-#endif
 
 		    Snapshot::iterator prev(m_base.find(curr->first));
 		    
@@ -361,7 +361,7 @@ namespace po = boost::program_options;
 int main(int argc, char **argv)
 {
     unsigned int period(1);
-    std::string filter("*");
+    std::string filter(".*");
     char sortby('d');
 
     po::options_description desc("Allowed options");
