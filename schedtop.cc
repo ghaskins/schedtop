@@ -56,8 +56,8 @@ public:
 		    if (type != "version")
 			throw std::runtime_error("could not open statistics");
 		    
-		    lis >> ver;
-		    if (ver != 14)
+		    lis >> m_version;
+		    if (m_version != 14)
 			throw std::runtime_error("unsupported version");
 		    
 		    state = state_timestamp;
@@ -173,6 +173,7 @@ private:
 	Import(is, basename + "rq_sched_info.pcount");
     }
 
+    int m_version;
     int m_cpu;
     int m_domain;
 };
@@ -194,10 +195,27 @@ bool CompareDelta(const ViewData &lhs, const ViewData &rhs)
     return lhs.m_delta > rhs.m_delta;
 }
 
+bool CompareValue(const ViewData &lhs, const ViewData &rhs)
+{
+    return lhs.m_val > rhs.m_val;
+}
+
+bool CompareName(const ViewData &lhs, const ViewData &rhs)
+{
+    return lhs.m_name < rhs.m_name;
+}
+
+
 class Engine
 {
 public:
-    Engine() : m_period(1), m_filter("*") {}
+    enum SortBy {
+	sortby_delta,
+	sortby_value,
+	sortby_name
+    };
+
+    Engine() : m_period(1), m_filter("*"), m_sortby(sortby_delta) {}
 
     void Run() {
 	do {
@@ -230,8 +248,18 @@ private:
 	    }
 	}
 
-	// Now sort by delta
-	view.sort(CompareDelta);
+	// Sort the data according to the configuration
+	switch (m_sortby) {
+	    case sortby_delta:
+		view.sort(CompareDelta);
+		break;
+	    case sortby_value:
+		view.sort(CompareValue);
+		break;
+	    case sortby_name:
+		view.sort(CompareName);
+		break;
+	}
 
 	// render the view data to the screen
 	{
@@ -252,6 +280,7 @@ private:
     unsigned int m_period;
     Snapshot     m_base;
     std::string  m_filter;
+    SortBy       m_sortby;
 };
 
 int main(int argc, void **argv)
