@@ -238,8 +238,10 @@ typedef boost::function<bool (const ViewData &lhs, const ViewData &rhs)> SortBy;
 class Engine
 {
 public:
-    Engine(unsigned int period, const std::string &ifilter,
-	   const std::string &xfilter,char sortby)
+    Engine(unsigned int period,
+	   const std::string &ifilter,
+	   const std::string &xfilter,
+	   char sortby)
 	: m_period(period), m_ifilter(ifilter), m_xfilter(xfilter)
 	{
 	    initscr();
