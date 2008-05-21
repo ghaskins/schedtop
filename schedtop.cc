@@ -131,6 +131,22 @@ private:
 	this->insert(item);
     }
 
+    void ImportUnknown(std::istream &is, const std::string &basename) {
+	int unknown(0);
+
+	while (is) {
+	    std::string s;
+
+	    is >> s;
+	    if (s.empty())
+		break;
+
+	    std::istringstream sis(s);
+	    Import(sis, basename + formindex("unknown", unknown));
+	    unknown++;
+	}
+    }
+
     void ImportDomain(std::istream &is) {
 	std::string basename =
 	    "/" + formindex("cpu", m_cpu)
@@ -181,6 +197,8 @@ private:
 	Import(is, basename + "ttwu_wake_remote");
 	Import(is, basename + "ttwu_move_affine");
 	Import(is, basename + "ttwu_move_balance");
+
+	ImportUnknown(is, basename);
     }
 
     void ImportCpu(std::istream &is) {
@@ -198,6 +216,8 @@ private:
 	Import(is, basename + "rq_sched_info.cpu_time");
 	Import(is, basename + "rq_sched_info.run_delay");
 	Import(is, basename + "rq_sched_info.pcount");
+
+	ImportUnknown(is, basename);
     }
 
     int m_version;
