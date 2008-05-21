@@ -23,15 +23,15 @@ enum State {
 };
 
 enum cpu_idle_type {
-	CPU_IDLE,
-	CPU_NOT_IDLE,
-	CPU_NEWLY_IDLE,
-	CPU_MAX_IDLE_TYPES
+    CPU_IDLE,
+    CPU_NOT_IDLE,
+    CPU_NEWLY_IDLE,
+    CPU_MAX_IDLE_TYPES
 };
 
-typedef std::pair<std::string, unsigned long long> Stat;
+typedef unsigned long long StatVal;
 
-class Snapshot : public std::list<Stat>
+class Snapshot : public std::map<std::string, StatVal>
 {
 public:
     Snapshot() : m_cpu(0), m_domain(0) {
@@ -95,12 +95,13 @@ public:
 
 private:
     void Import(std::istream &is, const std::string &name) {
-	unsigned long long val;
+	StatVal val;
 
 	is >> val;
 
-	Stat stat(name, val);
-	this->push_back(stat);
+	Snapshot::value_type item(name, val);
+
+	this->insert(item);
     }
 
     void ImportDomain(std::istream &is) {
@@ -121,24 +122,24 @@ private:
 	    switch(itype)
 	    {
 		case CPU_IDLE:
-		    stype = "idle";
+		    stype = "idle/";
 		    break;
 		case CPU_NOT_IDLE:
-		    stype = "not-idle";
+		    stype = "not-idle/";
 		    break;
 		case CPU_NEWLY_IDLE:
-		    stype = "newly-idle";
+		    stype = "newly-idle/";
 		    break;
 	    }
 
-	    Import(is, basename + stype + "/lb_count");
-	    Import(is, basename + stype + "/lb_balanced");
-	    Import(is, basename + stype + "/lb_failed");
-	    Import(is, basename + stype + "/lb_imbalance");
-	    Import(is, basename + stype + "/lb_gained");
-	    Import(is, basename + stype + "/lb_hot_gained");
-	    Import(is, basename + stype + "/lb_nobusyq");
-	    Import(is, basename + stype + "/lb_nobusyg");
+	    Import(is, basename + stype + "lb_count");
+	    Import(is, basename + stype + "lb_balanced");
+	    Import(is, basename + stype + "lb_failed");
+	    Import(is, basename + stype + "lb_imbalance");
+	    Import(is, basename + stype + "lb_gained");
+	    Import(is, basename + stype + "lb_hot_gained");
+	    Import(is, basename + stype + "lb_nobusyq");
+	    Import(is, basename + stype + "lb_nobusyg");
 	}
 
 	Import(is, basename + "alb_count");
@@ -176,15 +177,82 @@ private:
     int m_domain;
 };
 
+struct ViewData
+{
+    ViewData(const std::string &name, StatVal val, StatVal delta) :
+	m_name(name), m_val(val), m_delta(delta) {}
+
+    std::string m_name;
+    StatVal     m_val;
+    StatVal     m_delta;
+};
+
+typedef std::list<ViewData> ViewList;
+
+class Engine
+{
+public:
+    Engine() : m_period(1), m_filter("*") {}
+
+    void Run() {
+	do {
+	    Render();
+
+	    sleep(m_period);
+	} while (1);
+    }
+
+private:
+    void Render() {
+	Snapshot now;
+	ViewList view;
+
+	{
+	    Snapshot::iterator curr;
+	    
+	    // Generate the view data
+	    for (curr = now.begin(); curr != now.end(); ++curr)
+	    {
+		Snapshot::iterator prev(m_base.find(curr->first));
+		
+		if (prev == m_base.end())
+		    throw std::runtime_error("error finding " + curr->first);
+		
+		ViewData data(curr->first, curr->second,
+			      curr->second - prev->second);
+		
+		view.push_back(data);
+	    }
+	}
+
+	// Now sort by delta (FIXME)
+
+	// render the view data to the screen
+	{
+	    ViewList::iterator iter;
+
+	    for (iter = view.begin(); iter != view.end(); ++iter)
+	    {
+		std::cout << iter->m_name << "\t"
+			  << iter->m_val << "\t"
+			  << iter->m_delta << std::endl;
+	    }
+	}
+
+	// Update base with new data
+	m_base = now;
+    }
+
+    unsigned int m_period;
+    Snapshot     m_base;
+    std::string  m_filter;
+};
+
 int main(int argc, void **argv)
 {
-    Snapshot s;
-    Snapshot::iterator iter;
+    Engine e;
 
-    for (iter = s.begin(); iter != s.end(); ++iter)
-    {
-	std::cout << iter->first << ": " << iter->second << std::endl;
-    }
+    e.Run();
 
     return 0;
 }
