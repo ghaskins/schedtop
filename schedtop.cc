@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <curses.h>
+#include <boost/program_options.hpp>
 
 std::string formindex(const std::string &base, int index)
 {
@@ -216,95 +217,148 @@ public:
 	sortby_name
     };
 
-    Engine() : m_period(1), m_filter("*"), m_sortby(sortby_delta) {
-	initscr();
-    }
+    Engine(unsigned int period, const std::string &filter, char sortby)
+	: m_period(period), m_filter("*")
+	{
+	    initscr();
 
-    ~Engine() {
-	endwin();
-    }
+	    switch (sortby) {
+		case 'n':
+		    m_sortby = sortby_name;
+		    break;
+		case 'v':
+		    m_sortby = sortby_value;
+		    break;
+		case 'd':
+		    m_sortby = sortby_delta;
+		    break;
+		default:
+		    throw std::runtime_error("unknown sort option");
+	    }
+	}
 
-    void Run() {
-	do {
-	    Render();
+    ~Engine()
+	{
+	    endwin();
+	}
 
-	    sleep(m_period);
-	} while (1);
-    }
+    void Run()
+	{
+	    do {
+		Render();
+		
+		sleep(m_period);
+	    } while (1);
+	}
 
 private:
-    void Render() {
-	Snapshot now;
-	ViewList view;
-
+    void Render()
 	{
-	    Snapshot::iterator curr;
+	    Snapshot now;
+	    ViewList view;
 	    
-	    // Generate the view data
-	    for (curr = now.begin(); curr != now.end(); ++curr)
 	    {
-		Snapshot::iterator prev(m_base.find(curr->first));
+		Snapshot::iterator curr;
 		
-		if (prev == m_base.end())
-		    throw std::runtime_error("error finding " + curr->first);
-		
-		ViewData data(curr->first, curr->second,
-			      curr->second - prev->second);
-		
-		view.push_back(data);
+		// Generate the view data
+		for (curr = now.begin(); curr != now.end(); ++curr)
+		{
+		    Snapshot::iterator prev(m_base.find(curr->first));
+		    
+		    if (prev == m_base.end())
+			throw std::runtime_error("error finding " + curr->first);
+		    
+		    ViewData data(curr->first, curr->second,
+				  curr->second - prev->second);
+		    
+		    view.push_back(data);
+		}
 	    }
-	}
-
-	// Sort the data according to the configuration
-	switch (m_sortby) {
-	    case sortby_delta:
-		view.sort(CompareDelta);
-		break;
-	    case sortby_value:
-		view.sort(CompareValue);
-		break;
-	    case sortby_name:
-		view.sort(CompareName);
-		break;
-	}
-
-	// render the view data to the screen
-	{
-	    int row,col;
-	    int i(0);
-	    ViewList::iterator iter;
-
-	    getmaxyx(stdscr,row,col);
-	    clear();
-
-	    for (iter = view.begin(); iter != view.end() && i<row; ++iter, ++i)
+	    
+	    // Sort the data according to the configuration
+	    switch (m_sortby) {
+		case sortby_delta:
+		    view.sort(CompareDelta);
+		    break;
+		case sortby_value:
+		    view.sort(CompareValue);
+		    break;
+		case sortby_name:
+		    view.sort(CompareName);
+		    break;
+	    }
+	    
+	    // render the view data to the screen
 	    {
+		int row,col;
+		int i(2);
+		ViewList::iterator iter;
 		
-		move(i, 0);
-		printw("%s", iter->m_name.c_str());
-		move(i, 40);
-		printw("%ld", iter->m_val);
-		move(i, 60);
-		printw("%ld", iter->m_delta);
+		getmaxyx(stdscr,row,col);
+		clear();
+		
+		attron(A_BOLD);
+		mvprintw(0,0,  "Name");
+		mvprintw(0,40, "Value");
+		mvprintw(0,60, "Delta");
+		move(1,0);
+		{
+		    for (int j(0); j<col; j++)
+			addch('-');
+		}
+		attroff(A_BOLD);
+		
+		for (iter = view.begin();
+		     iter != view.end() && i < row;
+		     ++iter, ++i)
+		{
+		    
+		    move(i, 0);
+		    printw("%s", iter->m_name.c_str());
+		    move(i, 40);
+		    printw("%ld", iter->m_val);
+		    move(i, 60);
+		    printw("%ld", iter->m_delta);
+		}
 	    }
+	    
+	    refresh();
+	    
+	    // Update base with new data
+	    m_base = now;
 	}
-
-	refresh();
-
-	// Update base with new data
-	m_base = now;
-    }
-
+    
     unsigned int m_period;
     Snapshot     m_base;
     std::string  m_filter;
     SortBy       m_sortby;
 };
 
-int main(int argc, void **argv)
-{
-    Engine e;
+namespace po = boost::program_options;
 
+int main(int argc, char **argv)
+{
+    unsigned int period(1);
+    std::string filter("*");
+    char sortby('d');
+
+    po::options_description desc("Allowed options");
+    desc.add_options()
+	("help,h", "produces help message")
+	("period,p", po::value<unsigned int>(&period),
+	 "refresh period (default=1s)")
+	("filter,f", po::value<std::string>(&filter),
+	 "reg-ex filter (default=*)")
+	("sort,s", po::value<char>(&sortby),
+	 "sort-by: n=name, v=value, d=delta (default='d')")
+	;
+    
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+
+    Engine e(period, filter, sortby);
+    
     e.Run();
 
     return 0;
