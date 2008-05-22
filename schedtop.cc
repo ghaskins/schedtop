@@ -41,13 +41,6 @@ std::string formindex(const std::string &base, int index)
     return os.str();
 }
 
-enum State {
-    state_version,
-    state_timestamp,
-    state_cpu,
-    state_domain
-};
-
 enum cpu_idle_type {
     CPU_IDLE,
     CPU_NOT_IDLE,
@@ -60,6 +53,13 @@ typedef unsigned long long StatVal;
 class Snapshot : public std::map<std::string, StatVal>
 {
 public:
+    enum State {
+	state_version,
+	state_timestamp,
+	state_cpu,
+	state_domain
+    };
+    
     Snapshot() : m_cpu(0), m_domain(0) {
 	std::ifstream is("/proc/schedstat");
 	State state(state_version);
@@ -367,12 +367,9 @@ private:
 		     ++iter, ++i)
 		{
 		    
-		    move(i, 0);
-		    printw("%s", iter->m_name.c_str());
-		    move(i, 40);
-		    printw("%llu", iter->m_val);
-		    move(i, 60);
-		    printw("%llu", iter->m_delta);
+		    mvprintw(i,0, "%s", iter->m_name.c_str());
+		    mvprintw(0,40, "%llu", iter->m_val);
+		    mvprintw(i,60, "%llu", iter->m_delta);
 		}
 	    }
 	    
