@@ -59,155 +59,160 @@ public:
 	state_domain
     };
     
-    Snapshot() : m_cpu(0), m_domain(0) {
-	std::ifstream is("/proc/schedstat");
-	State state(state_version);
-
-	if (!is.is_open())
-	    throw std::runtime_error("could not open /proc/schedstats");
-	
-	while(is) {
-	    std::string line;
-	    std::string type;
+    Snapshot() : m_cpu(0), m_domain(0)
+	{
+	    std::ifstream is("/proc/schedstat");
+	    State state(state_version);
 	    
-	    std::getline(is, line);
-	    if (line.empty())
-		break;
+	    if (!is.is_open())
+		throw std::runtime_error("could not open /proc/schedstats");
 	    
-	    std::istringstream lis(line);
-	    
-	    lis >> type;
-	    
-	    switch (state) {
-		case state_version: {
-		    unsigned int ver;
-		    if (type != "version")
-			throw std::runtime_error("error parsing version");
-		    
-		    lis >> m_version;
-		    if (m_version != 14)
-			throw std::runtime_error("unsupported version");
-		    
-		    state = state_timestamp;
+	    while(is) {
+		std::string line;
+		std::string type;
+		
+		std::getline(is, line);
+		if (line.empty())
 		    break;
-		}
-		case state_timestamp:
-		    if (type != "timestamp")
-			throw std::runtime_error("error parsing timestamp");
-		    
-		    state = state_cpu;
-		    break;
-		case state_domain:
-		    if (type == formindex("domain", m_domain)) {
-			ImportDomain(lis);
-			m_domain++;
+		
+		std::istringstream lis(line);
+		
+		lis >> type;
+		
+		switch (state) {
+		    case state_version: {
+			unsigned int ver;
+			if (type != "version")
+			    throw std::runtime_error("error parsing version");
+			
+			lis >> m_version;
+			if (m_version != 14)
+			    throw std::runtime_error("unsupported version");
+			
+			state = state_timestamp;
 			break;
-		    } else if (type == formindex("cpu", m_cpu+1)) {
+		    }
+		    case state_timestamp:
+			if (type != "timestamp")
+			    throw std::runtime_error("error parsing timestamp");
+			
 			state = state_cpu;
-			m_cpu++;
-		    } else
-			throw std::runtime_error("error parsing domain");
-		    
-		    // fall through
-		case state_cpu:
-		    if (type != formindex("cpu", m_cpu))
-			throw std::runtime_error("error parsing cpu");
-
-		    ImportCpu(lis);
-		    state = state_domain;
-		    m_domain = 0;
-		    break;
+			break;
+		    case state_domain:
+			if (type == formindex("domain", m_domain)) {
+			    ImportDomain(lis);
+			    m_domain++;
+			    break;
+			} else if (type == formindex("cpu", m_cpu+1)) {
+			    state = state_cpu;
+			    m_cpu++;
+			} else
+			    throw std::runtime_error("error parsing domain");
+			
+			// fall through
+		    case state_cpu:
+			if (type != formindex("cpu", m_cpu))
+			    throw std::runtime_error("error parsing cpu");
+			
+			ImportCpu(lis);
+			state = state_domain;
+			m_domain = 0;
+			break;
+		}
 	    }
 	}
-    }
-
+    
 private:
-    void Import(std::istream &is, const std::string &name) {
-	StatVal val;
-
-	is >> val;
-
-	Snapshot::value_type item(name, val);
-
-	this->insert(item);
-    }
-
-    void ImportUnknown(std::istream &is, const std::string &basename) {
-	int unknown(0);
-
-	while (is) {
-	    std::string s;
-
-	    is >> s;
-	    if (s.empty())
-		break;
-
-	    std::istringstream sis(s);
-	    Import(sis, basename + formindex("unknown", unknown));
-	    unknown++;
-	}
-    }
-
-    void ImportDomain(std::istream &is) {
-	std::string basename =
-	    "/" + formindex("cpu", m_cpu)
-	    + "/" + formindex("domain", m_domain) + "/";
-	std::string tmp;
-
-	// skip over the cpumask_t
-	is >> tmp;
-
-	for (int itype(0);
-	     itype < sizeof(IdleType)/sizeof(IdleType[0]);
-	     ++itype)
+    void Import(std::istream &is, const std::string &name)
 	{
-	    std::string stype(IdleType[itype]);
-
-	    Import(is, basename + stype + "lb_count");
-	    Import(is, basename + stype + "lb_balanced");
-	    Import(is, basename + stype + "lb_failed");
-	    Import(is, basename + stype + "lb_imbalance");
-	    Import(is, basename + stype + "lb_gained");
-	    Import(is, basename + stype + "lb_hot_gained");
-	    Import(is, basename + stype + "lb_nobusyq");
-	    Import(is, basename + stype + "lb_nobusyg");
+	    StatVal val;
+	    
+	    is >> val;
+	    
+	    Snapshot::value_type item(name, val);
+	    
+	    this->insert(item);
 	}
-
-	Import(is, basename + "alb_count");
-	Import(is, basename + "alb_failed");
-	Import(is, basename + "alb_pushed");
-	Import(is, basename + "sbe_count");
-	Import(is, basename + "sbe_balanced");
-	Import(is, basename + "sbe_pushed");
-	Import(is, basename + "sbf_count");
-	Import(is, basename + "sbf_balanced");
-	Import(is, basename + "sbf_pushed");
-	Import(is, basename + "ttwu_wake_remote");
-	Import(is, basename + "ttwu_move_affine");
-	Import(is, basename + "ttwu_move_balance");
-
-	ImportUnknown(is, basename);
-    }
-
-    void ImportCpu(std::istream &is) {
-	std::string basename("/" + formindex("cpu", m_cpu) + "/rq/");
-
-	Import(is, basename + "yld_both_empty");
-	Import(is, basename + "yld_act_empty");
-	Import(is, basename + "yld_exp_empty");
-	Import(is, basename + "yld_count");
-	Import(is, basename + "sched_switch");
-	Import(is, basename + "sched_count");
-	Import(is, basename + "sched_goidle");
-	Import(is, basename + "ttwu_count");
-	Import(is, basename + "ttwu_local");
-	Import(is, basename + "rq_sched_info.cpu_time");
-	Import(is, basename + "rq_sched_info.run_delay");
-	Import(is, basename + "rq_sched_info.pcount");
-
-	ImportUnknown(is, basename);
-    }
-
+    
+    void ImportUnknown(std::istream &is, const std::string &basename)
+	{
+	    int unknown(0);
+	    
+	    while (is) {
+		std::string s;
+		
+		is >> s;
+		if (s.empty())
+		    break;
+		
+		std::istringstream sis(s);
+		Import(sis, basename + formindex("unknown", unknown));
+		unknown++;
+	    }
+	}
+    
+    void ImportDomain(std::istream &is)
+	{
+	    std::string basename =
+		"/" + formindex("cpu", m_cpu)
+		+ "/" + formindex("domain", m_domain) + "/";
+	    std::string tmp;
+	    
+	    // skip over the cpumask_t
+	    is >> tmp;
+	    
+	    for (int itype(0);
+		 itype < sizeof(IdleType)/sizeof(IdleType[0]);
+		 ++itype)
+	    {
+		std::string stype(IdleType[itype]);
+		
+		Import(is, basename + stype + "lb_count");
+		Import(is, basename + stype + "lb_balanced");
+		Import(is, basename + stype + "lb_failed");
+		Import(is, basename + stype + "lb_imbalance");
+		Import(is, basename + stype + "lb_gained");
+		Import(is, basename + stype + "lb_hot_gained");
+		Import(is, basename + stype + "lb_nobusyq");
+		Import(is, basename + stype + "lb_nobusyg");
+	    }
+	    
+	    Import(is, basename + "alb_count");
+	    Import(is, basename + "alb_failed");
+	    Import(is, basename + "alb_pushed");
+	    Import(is, basename + "sbe_count");
+	    Import(is, basename + "sbe_balanced");
+	    Import(is, basename + "sbe_pushed");
+	    Import(is, basename + "sbf_count");
+	    Import(is, basename + "sbf_balanced");
+	    Import(is, basename + "sbf_pushed");
+	    Import(is, basename + "ttwu_wake_remote");
+	    Import(is, basename + "ttwu_move_affine");
+	    Import(is, basename + "ttwu_move_balance");
+	    
+	    ImportUnknown(is, basename);
+	}
+    
+    void ImportCpu(std::istream &is)
+	{
+	    std::string basename("/" + formindex("cpu", m_cpu) + "/rq/");
+	    
+	    Import(is, basename + "yld_both_empty");
+	    Import(is, basename + "yld_act_empty");
+	    Import(is, basename + "yld_exp_empty");
+	    Import(is, basename + "yld_count");
+	    Import(is, basename + "sched_switch");
+	    Import(is, basename + "sched_count");
+	    Import(is, basename + "sched_goidle");
+	    Import(is, basename + "ttwu_count");
+	    Import(is, basename + "ttwu_local");
+	    Import(is, basename + "rq_sched_info.cpu_time");
+	    Import(is, basename + "rq_sched_info.run_delay");
+	    Import(is, basename + "rq_sched_info.pcount");
+	    
+	    ImportUnknown(is, basename);
+	}
+    
     int m_version;
     int m_cpu;
     int m_domain;
@@ -365,8 +370,8 @@ private:
 	    m_base = now;
 	}
     
-    unsigned int m_period;
     Snapshot     m_base;
+    unsigned int m_period;
     std::string  m_ifilter;
     std::string  m_xfilter;
     SortBy       m_sortby;
