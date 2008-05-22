@@ -9,7 +9,7 @@ PREFIX ?= /usr/local
 NAME=schedtop
 INSTPATH=$(PREFIX)/bin
 
-VERSION=0.1
+VERSION=0.2
 RELEASE=1
 RPMBIN=$(OBJDIR)/$(NAME)-$(VERSION).tar.gz
 
