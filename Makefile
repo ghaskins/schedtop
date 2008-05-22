@@ -14,7 +14,6 @@ RELEASE=1
 RPMBIN=$(OBJDIR)/$(NAME)-$(VERSION).tar.gz
 
 SRCS += $(shell find *.cc)
-HEADERS += $(shell find *.hh)
 
 OBJS = $(patsubst %.cc,$(OBJDIR)/%.o,$(SRCS))
 
@@ -22,7 +21,7 @@ OUTPUT = $(OBJDIR)/$(NAME)
 
 all: $(OUTPUT)
 
-$(OBJS): $(HEADERS) Makefile
+$(OBJS): Makefile
 
 $(OUTPUT): $(OBJS)
 
