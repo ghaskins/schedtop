@@ -41,11 +41,10 @@ std::string formindex(const std::string &base, int index)
     return os.str();
 }
 
-enum cpu_idle_type {
-    CPU_IDLE,
-    CPU_NOT_IDLE,
-    CPU_NEWLY_IDLE,
-    CPU_MAX_IDLE_TYPES
+char *IdleType[] = {
+    "idle/",
+    "not-idle/",
+    "newly-idle/"
 };
 
 typedef unsigned long long StatVal;
@@ -158,24 +157,11 @@ private:
 	// skip over the cpumask_t
 	is >> tmp;
 
-	for (int itype(CPU_IDLE);
-	     itype < CPU_MAX_IDLE_TYPES;
+	for (int itype(0);
+	     itype < sizeof(IdleType)/sizeof(IdleType[0]);
 	     ++itype)
 	{
-	    std::string stype;
-
-	    switch(itype)
-	    {
-		case CPU_IDLE:
-		    stype = "idle/";
-		    break;
-		case CPU_NOT_IDLE:
-		    stype = "not-idle/";
-		    break;
-		case CPU_NEWLY_IDLE:
-		    stype = "newly-idle/";
-		    break;
-	    }
+	    std::string stype(IdleType[itype]);
 
 	    Import(is, basename + stype + "lb_count");
 	    Import(is, basename + stype + "lb_balanced");
