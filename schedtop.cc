@@ -360,7 +360,7 @@ private:
 		{
 		    
 		    mvprintw(i,0, "%s", iter->m_name.c_str());
-		    mvprintw(0,40, "%llu", iter->m_val);
+		    mvprintw(i,40, "%llu", iter->m_val);
 		    mvprintw(i,60, "%llu", iter->m_delta);
 		}
 	    }
