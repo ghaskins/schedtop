@@ -1,6 +1,6 @@
 %define rpmrel _RPM_RELEASE
 
-BuildRequires: boost-devel ncurses-devel
+BuildRequires: boost-devel ncurses-devel gcc-c++
 
 Summary: schedtop: displays scheduler statistics
 Name: schedtop
