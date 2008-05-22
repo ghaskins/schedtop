@@ -32,7 +32,7 @@
 #include <boost/regex.hpp>
 #include <boost/function.hpp>
 
-std::string formindex(const std::string &base, int index)
+std::string FormIndex(const std::string &base, int index)
 {
     std::ostringstream os;
 
@@ -99,11 +99,11 @@ public:
 			state = state_cpu;
 			break;
 		    case state_domain:
-			if (type == formindex("domain", m_domain)) {
+			if (type == FormIndex("domain", m_domain)) {
 			    ImportDomain(lis);
 			    m_domain++;
 			    break;
-			} else if (type == formindex("cpu", m_cpu+1)) {
+			} else if (type == FormIndex("cpu", m_cpu+1)) {
 			    state = state_cpu;
 			    m_cpu++;
 			} else
@@ -111,7 +111,7 @@ public:
 			
 			// fall through
 		    case state_cpu:
-			if (type != formindex("cpu", m_cpu))
+			if (type != FormIndex("cpu", m_cpu))
 			    throw std::runtime_error("error parsing cpu");
 			
 			ImportCpu(lis);
@@ -146,7 +146,7 @@ private:
 		    break;
 		
 		std::istringstream sis(s);
-		Import(sis, basename + formindex("unknown", unknown));
+		Import(sis, basename + FormIndex("unknown", unknown));
 		unknown++;
 	    }
 	}
@@ -154,8 +154,8 @@ private:
     void ImportDomain(std::istream &is)
 	{
 	    std::string basename =
-		"/" + formindex("cpu", m_cpu)
-		+ "/" + formindex("domain", m_domain) + "/";
+		"/" + FormIndex("cpu", m_cpu)
+		+ "/" + FormIndex("domain", m_domain) + "/";
 	    std::string tmp;
 	    
 	    // skip over the cpumask_t
@@ -195,7 +195,7 @@ private:
     
     void ImportCpu(std::istream &is)
 	{
-	    std::string basename("/" + formindex("cpu", m_cpu) + "/rq/");
+	    std::string basename("/" + FormIndex("cpu", m_cpu) + "/rq/");
 	    
 	    Import(is, basename + "yld_both_empty");
 	    Import(is, basename + "yld_act_empty");
