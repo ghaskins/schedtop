@@ -4,6 +4,9 @@
 //
 // Author: Gregory Haskins <ghaskins@novell.com>
 //
+//   Special thanks to David Bahi <dbahi@novell.com> for helping to get the
+//   reg-ex code working.
+//
 // schedtop is free software; you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License v2 
 // as published by the Free Software Foundation.
