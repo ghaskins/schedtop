@@ -67,6 +67,9 @@ public:
     Snapshot() : m_cpu(0), m_domain(0) {
 	std::ifstream is("/proc/schedstat");
 	State state(state_version);
+
+	if (!is.is_open())
+	    throw std::runtime_error("could not open /proc/schedstats");
 	
 	while(is) {
 	    std::string line;
@@ -84,7 +87,7 @@ public:
 		case state_version: {
 		    unsigned int ver;
 		    if (type != "version")
-			throw std::runtime_error("could not open statistics");
+			throw std::runtime_error("error parsing version");
 		    
 		    lis >> m_version;
 		    if (m_version != 14)
@@ -424,9 +427,14 @@ int main(int argc, char **argv)
 	return -1;
     }
 
-    Engine e(period, ifilter, xfilter, sortby);
-    
-    e.Run();
+    try {
+	Engine e(period, ifilter, xfilter, sortby);
+	
+	e.Run();
+    } catch (std::exception &e) {
+	std::cerr << "Exception: " << e.what() << std::endl;
+	return -1;
+    }
 
     return 0;
 }
