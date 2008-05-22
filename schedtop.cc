@@ -346,10 +346,11 @@ private:
 		mvprintw(0,40, "Value");
 		mvprintw(0,60, "Delta");
 		move(1,0);
-		{
-		    for (int j(0); j<col; j++)
-			addch('-');
-		}
+		
+		// Draw separator
+		for (int j(0); j<col; j++)
+		    addch('-');
+
 		attroff(A_BOLD);
 		
 		// Draw data
