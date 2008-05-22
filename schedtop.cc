@@ -20,10 +20,6 @@
 // along with schedtop; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-
-// compile with:
-//    g++ schedtop.cc -g -lncurses -lboost_program_options -lboost_regex -o schedtop
-
 #include <iostream>
 #include <fstream>
 #include <string>
