@@ -312,14 +312,14 @@ private:
 		    boost::regex e;
 		    boost::cmatch what;
 
-		    e.assign(m_ifilter, boost::regex_constants::basic);
+		    e.assign(m_ifilter, boost::regex_constants::perl);
             
 		    // check for "include" filter matches
 		    if (!boost::regex_search(curr->first.c_str(), what, e))
 			continue;
 		    else {
 			// .. and then for "exclude" matches
-			e.assign(m_xfilter, boost::regex_constants::basic);
+			e.assign(m_xfilter, boost::regex_constants::perl);
 			if (boost::regex_search(curr->first.c_str(), what, e))
 			    continue;
 		    }
