@@ -48,8 +48,9 @@ char *IdleType[] = {
 };
 
 typedef unsigned long long StatVal;
+typedef std::map<std::string, StatVal> StatMap;
 
-class Snapshot : public std::map<std::string, StatVal>
+class GlobalSnapshot
 {
 public:
     enum State {
@@ -59,7 +60,7 @@ public:
 	state_domain
     };
     
-    Snapshot() : m_cpu(0), m_domain(0)
+    GlobalSnapshot(StatMap &smap) : m_smap(smap), m_cpu(0), m_domain(0)
 	{
 	    std::ifstream is("/proc/schedstat");
 	    State state(state_version);
@@ -129,9 +130,9 @@ private:
 	    
 	    is >> val;
 	    
-	    Snapshot::value_type item(name, val);
+	    StatMap::value_type item(name, val);
 	    
-	    this->insert(item);
+	    m_smap.insert(item);
 	}
     
     void ImportUnknown(std::istream &is, const std::string &basename)
@@ -213,9 +214,19 @@ private:
 	    ImportUnknown(is, basename);
 	}
     
+    StatMap &m_smap;
     int m_version;
     int m_cpu;
     int m_domain;
+};
+
+class Snapshot : public StatMap
+{
+public:
+    Snapshot()
+	{
+	    GlobalSnapshot(*this);
+	}
 };
 
 struct ViewData
