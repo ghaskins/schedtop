@@ -250,8 +250,8 @@ void ProcSnapshot(StatMap &smap)
     
     fs::directory_iterator end;
     for (fs::directory_iterator iter("/proc"); iter != end; ++iter) {
-	fs::path path(*iter / "schedstat");
 	
+	fs::path path(*iter / "schedstat");
 	if (fs::exists(path)) {
 	    std::ifstream is(path.string().c_str());
 	    
@@ -264,6 +264,45 @@ void ProcSnapshot(StatMap &smap)
 	    importer += "sched_info.run_delay";
 	    importer += "sched_info.pcount";
 	}
+
+	path = *iter / "sched";
+	if (fs::exists(path)) {
+	    std::ifstream is(path.string().c_str());
+	    
+	    if (!is.is_open())
+		throw std::runtime_error("could not open " + path.string());
+
+	    while(is) {
+		std::string line;
+		std::string type;
+		
+		std::getline(is, line);
+		if (line.empty())
+		    break;
+		
+		std::istringstream lis(line);
+		
+		lis >> type;
+
+		boost::regex e;
+		boost::cmatch what;
+		
+		e.assign("nr_", boost::regex_constants::basic);
+            
+		if (boost::regex_search(type.c_str(), what, e)) {
+		    std::string tmp;
+
+		    // discard the uneeded ":" 
+		    lis >> tmp;
+
+		    Importer importer(smap, lis,
+				      iter->string() + "/");
+
+		    importer += type;
+		}
+	    }
+	}
+	
     }
 }
 
