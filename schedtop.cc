@@ -414,13 +414,12 @@ private:
 		    }
 
 		    Snapshot::iterator prev(m_base.find(curr->first));
+		    StatVal delta(0);
+
+		    if (prev != m_base.end())
+			delta = curr->second - prev->second;
 		    
-		    if (prev == m_base.end())
-			throw std::runtime_error("error finding "
-						 + curr->first);
-		    
-		    ViewData data(curr->first, curr->second,
-				  curr->second - prev->second);
+		    ViewData data(curr->first, curr->second, delta);
 		    
 		    view.push_back(data);
 		}
