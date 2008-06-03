@@ -31,6 +31,8 @@
 #include <boost/program_options.hpp>
 #include <boost/regex.hpp>
 #include <boost/function.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 std::string FormIndex(const std::string &base, int index)
 {
@@ -49,6 +51,31 @@ char *IdleType[] = {
 
 typedef unsigned long long StatVal;
 typedef std::map<std::string, StatVal> StatMap;
+
+class Importer
+{
+public:
+    Importer(StatMap &smap,
+	     std::istream &is,
+	     const std::string &basename) :
+	m_smap(smap), m_is(is), m_basename(basename) {}
+
+    void operator+=(const std::string &name)
+	{
+	    StatVal val;
+	    
+	    m_is >> val;
+	    
+	    StatMap::value_type item(m_basename + name, val);
+	    
+	    m_smap.insert(item);
+	}
+    
+private:
+    StatMap           &m_smap;
+    std::istream      &m_is;
+    const std::string  m_basename;
+};
 
 class GlobalSnapshot
 {
@@ -124,17 +151,6 @@ public:
 	}
     
 private:
-    void Import(std::istream &is, const std::string &name)
-	{
-	    StatVal val;
-	    
-	    is >> val;
-	    
-	    StatMap::value_type item(name, val);
-	    
-	    m_smap.insert(item);
-	}
-    
     void ImportUnknown(std::istream &is, const std::string &basename)
 	{
 	    int unknown(0);
@@ -147,7 +163,9 @@ private:
 		    break;
 		
 		std::istringstream sis(s);
-		Import(sis, basename + FormIndex("unknown", unknown));
+		Importer importer(m_smap, sis, basename);
+
+		importer += FormIndex("unknown", unknown);
 		unknown++;
 	    }
 	}
@@ -166,30 +184,32 @@ private:
 		 itype < sizeof(IdleType)/sizeof(IdleType[0]);
 		 ++itype)
 	    {
-		std::string stype(IdleType[itype]);
-		
-		Import(is, basename + stype + "lb_count");
-		Import(is, basename + stype + "lb_balanced");
-		Import(is, basename + stype + "lb_failed");
-		Import(is, basename + stype + "lb_imbalance");
-		Import(is, basename + stype + "lb_gained");
-		Import(is, basename + stype + "lb_hot_gained");
-		Import(is, basename + stype + "lb_nobusyq");
-		Import(is, basename + stype + "lb_nobusyg");
+		Importer importer(m_smap, is, basename + IdleType[itype]);
+
+		importer += "lb_count";
+		importer += "lb_balanced";
+		importer += "lb_failed";
+		importer += "lb_imbalance";
+		importer += "lb_gained";
+		importer += "lb_hot_gained";
+		importer += "lb_nobusyq";
+		importer += "lb_nobusyg";
 	    }
-	    
-	    Import(is, basename + "alb_count");
-	    Import(is, basename + "alb_failed");
-	    Import(is, basename + "alb_pushed");
-	    Import(is, basename + "sbe_count");
-	    Import(is, basename + "sbe_balanced");
-	    Import(is, basename + "sbe_pushed");
-	    Import(is, basename + "sbf_count");
-	    Import(is, basename + "sbf_balanced");
-	    Import(is, basename + "sbf_pushed");
-	    Import(is, basename + "ttwu_wake_remote");
-	    Import(is, basename + "ttwu_move_affine");
-	    Import(is, basename + "ttwu_move_balance");
+
+	    Importer importer(m_smap, is, basename);
+
+	    importer += "alb_count";
+	    importer += "alb_failed";
+	    importer += "alb_pushed";
+	    importer += "sbe_count";
+	    importer += "sbe_balanced";
+	    importer += "sbe_pushed";
+	    importer += "sbf_count";
+	    importer += "sbf_balanced";
+	    importer += "sbf_pushed";
+	    importer += "ttwu_wake_remote";
+	    importer += "ttwu_move_affine";
+	    importer += "ttwu_move_balance";
 	    
 	    ImportUnknown(is, basename);
 	}
@@ -197,28 +217,55 @@ private:
     void ImportCpu(std::istream &is)
 	{
 	    std::string basename("/" + FormIndex("cpu", m_cpu) + "/rq/");
-	    
-	    Import(is, basename + "yld_both_empty");
-	    Import(is, basename + "yld_act_empty");
-	    Import(is, basename + "yld_exp_empty");
-	    Import(is, basename + "yld_count");
-	    Import(is, basename + "sched_switch");
-	    Import(is, basename + "sched_count");
-	    Import(is, basename + "sched_goidle");
-	    Import(is, basename + "ttwu_count");
-	    Import(is, basename + "ttwu_local");
-	    Import(is, basename + "rq_sched_info.cpu_time");
-	    Import(is, basename + "rq_sched_info.run_delay");
-	    Import(is, basename + "rq_sched_info.pcount");
+	    Importer importer(m_smap, is, basename);
+
+	    importer += "yld_both_empty";
+	    importer += "yld_act_empty";
+	    importer += "yld_exp_empty";
+	    importer += "yld_count";
+	    importer += "sched_switch";
+	    importer += "sched_count";
+	    importer += "sched_goidle";
+	    importer += "ttwu_count";
+	    importer += "ttwu_local";
+	    importer += "rq_sched_info.cpu_time";
+	    importer += "rq_sched_info.run_delay";
+	    importer += "rq_sched_info.pcount";
 	    
 	    ImportUnknown(is, basename);
 	}
-    
+
     StatMap &m_smap;
     int m_version;
     int m_cpu;
     int m_domain;
 };
+
+namespace fs = boost::filesystem;
+
+void ProcSnapshot(StatMap &smap)
+{
+    if (!fs::exists("/proc"))
+	return;
+    
+    fs::directory_iterator end;
+    for (fs::directory_iterator iter("/proc"); iter != end; ++iter) {
+	fs::path path(*iter / "schedstat");
+	
+	if (fs::exists(path)) {
+	    std::ifstream is(path.string().c_str());
+	    
+	    if (!is.is_open())
+		throw std::runtime_error("could not open " + path.string());
+	    
+	    Importer importer(smap, is, iter->string() + "/");
+	    
+	    importer += "sched_info.cpu_time";
+	    importer += "sched_info.run_delay";
+	    importer += "sched_info.pcount";
+	}
+    }
+}
 
 class Snapshot : public StatMap
 {
@@ -226,6 +273,7 @@ public:
     Snapshot()
 	{
 	    GlobalSnapshot(*this);
+	    ProcSnapshot(*this);
 	}
 };
 
