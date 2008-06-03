@@ -404,9 +404,9 @@ private:
 		mvprintw(0,0,  "Name");
 		mvprintw(0,40, "Value");
 		mvprintw(0,60, "Delta");
-		move(1,0);
 		
 		// Draw separator
+		move(1,0);
 		for (int j(0); j<col; j++)
 		    addch('-');
 
