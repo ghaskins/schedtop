@@ -43,7 +43,7 @@ std::string FormIndex(const std::string &base, int index)
     return os.str();
 }
 
-char *IdleType[] = {
+const char *IdleType[] = {
     "idle/",
     "not-idle/",
     "newly-idle/"
