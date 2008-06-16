@@ -251,12 +251,12 @@ void ProcSnapshot(StatMap &smap)
     fs::directory_iterator end;
     for (fs::directory_iterator iter("/proc"); iter != end; ++iter) {
 	
-	fs::path path(*iter / "schedstat");
+	std::string path(iter->string() + "/schedstat");
 	if (fs::exists(path)) {
-	    std::ifstream is(path.string().c_str());
+	    std::ifstream is(path.c_str());
 	    
 	    if (!is.is_open())
-		throw std::runtime_error("could not open " + path.string());
+		throw std::runtime_error("could not open " + path);
 	    
 	    Importer importer(smap, is, iter->string() + "/");
 	    
@@ -265,12 +265,12 @@ void ProcSnapshot(StatMap &smap)
 	    importer += "sched_info.pcount";
 	}
 
-	path = *iter / "sched";
+	path = iter->string() + "/sched";
 	if (fs::exists(path)) {
-	    std::ifstream is(path.string().c_str());
+	    std::ifstream is(path.c_str());
 	    
 	    if (!is.is_open())
-		throw std::runtime_error("could not open " + path.string());
+		throw std::runtime_error("could not open " + path);
 
 	    while(is) {
 		std::string line;
