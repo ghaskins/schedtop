@@ -114,7 +114,7 @@ public:
 			    throw std::runtime_error("error parsing version");
 			
 			lis >> m_version;
-			if (m_version != 14)
+			if (!IsSupportedVersion())
 			    throw std::runtime_error("unsupported version");
 			
 			state = state_timestamp;
@@ -151,6 +151,20 @@ public:
 	}
     
 private:
+    bool IsSupportedVersion()
+	{
+	    if ((m_version < 14) || (m_version > 15))
+		return false;
+	    return true;
+	}
+    
+    bool VersionSupportsSchedYield()
+	{
+	    if (m_version >= 15)
+		return false;
+	    return true;
+	}
+    
     void ImportUnknown(std::istream &is, const std::string &basename)
 	{
 	    int unknown(0);
@@ -219,9 +233,11 @@ private:
 	    std::string basename("/" + FormIndex("cpu", m_cpu) + "/rq/");
 	    Importer importer(m_smap, is, basename);
 
-	    importer += "yld_both_empty";
-	    importer += "yld_act_empty";
-	    importer += "yld_exp_empty";
+	    if (VersionSupportsSchedYield()){
+		    importer += "yld_both_empty";
+		    importer += "yld_act_empty";
+		    importer += "yld_exp_empty";
+	    }
 	    importer += "yld_count";
 	    importer += "sched_switch";
 	    importer += "sched_count";
