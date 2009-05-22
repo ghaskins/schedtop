@@ -7,7 +7,7 @@ Name: schedtop
 Version: _RPM_VERSION
 License: GPL
 Release: %{rpmrel}
-Requires: boost ncurses
+Requires: ncurses
 Group: System
 Source: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -37,6 +37,6 @@ make clean
 
 %files
 %defattr(-,root,root)
-/bin/schedtop
+/usr/bin/schedtop
 
 %changelog

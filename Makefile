@@ -8,9 +8,9 @@ LIBRARIES += -lboost_filesystem
 LIBRARIES += -lncurses
 PREFIX ?= /usr/local
 NAME=schedtop
-INSTPATH=$(PREFIX)/bin
+INSTPATH=$(PREFIX)/usr/bin
 
-VERSION=1.0
+VERSION=1.1
 RELEASE=1
 RPMBIN=$(OBJDIR)/$(NAME)-$(VERSION).tar.gz
 
