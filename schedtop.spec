@@ -32,11 +32,19 @@ make
 %install
 make install PREFIX=$RPM_BUILD_ROOT
 
+# Install documentation  
+%{__mkdir_p} %{buildroot}/%{_defaultdocdir}/schedtop  
+%{__mkdir_p} %{buildroot}/%{_mandir}/man1  
+%{__gzip} *.1  
+%{__cp} *.1.gz %{buildroot}/%{_mandir}/man1  
+
 %clean
 make clean
 
 %files
 %defattr(-,root,root)
 /usr/bin/schedtop
+%{_mandir}/man1/*  
+%{_defaultdocdir}/*
 
 %changelog

@@ -1,0 +1,38 @@
+.TH "schedtop" "1" "1.1" "Gregory Haskins <ghaskins@novell.com>" "Utils"
+.SH "NAME"
+schedtop \- scheduler statistics visualization tool
+.SH "SYNOPSIS"
+.LP 
+.B schedtop \-\fBh\fR | \-\fBp\fI period\fR \-\fBi\fI regex\fR \-\fBx\fI regex\fR \-\fBs\fI [n|v|d]\fR
+.SH "DESCRIPTION"
+.LP 
+This program is a free (GPL) utility to process various scheduler related statistics (e.g. /proc/schedstat) such that the "busiest" stats (greatest delta) will bubble up to the top similar to the ubiquitous "top" utility. It can alternately be sorted by the stat's value, or by name. Stats can be inclusively or exclusively filtered based on reg-ex pattern matching.
+.br 
+.SH "COMMAND OPTIONS"
+.LP
+.TP 5
+\-\fBp\fR, \--\fBperiod\fR  : refresh period (default=1s)
+.TP 5
+\-\fBi\fR, \--\fBinclude\fR : reg-ex inclusive filter (default=".*")
+.TP 5
+\-\fBx\fR, \--\fBexclude\fR : reg-ex exclusive filter (default="^$")
+.TP 5
+\-\fBs\fR, \--\fBsort\fR    : sort-by: n=name, v=value, d=delta (default='d')
+.TP 10 
+\-\fBh\fR : produces help message
+.SH "EXAMPLES"
+.LP
+To filter out any stats with "sched_info" or "imbalance" in the name, use the exclude filter with an OR operator:
+.LP
+   schedtop -x 'sched_info|imbalance'
+.LP
+To include only stats from cpu3, and sort by value:
+.LP
+   schedtop -i cpu3 -s v
+.SH "AUTHORS"
+.LP 
+schedtop is developed by Gregory Haskins <ghaskins@novell.com>
+.br
+This man page was written by Gregory Haskins <ghaskins@novell.com> for the 
+Suse GNU/Linux distribution (but it may be used by others)
+
