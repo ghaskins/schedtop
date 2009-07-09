@@ -23,7 +23,7 @@ Version: _RPM_VERSION
 License: GPL
 Release: %{rpmrel}
 Requires: %{boostdeps} ncurses
-Group: System
+Group: System/Monitoring
 Source: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
 
