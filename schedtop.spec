@@ -5,7 +5,7 @@
 %endif
 
 %if 0%{?suse_version} > 1110
-%define boostver 1_38_0
+%define boostver 1_39_0
 %endif
 
 %if 0%{?suse_version} > 1100
