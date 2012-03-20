@@ -1,28 +1,12 @@
 %define rpmrel _RPM_RELEASE
 
-%if 0%{?suse_version} == 1110
-%define boostver 1_36_0
-%endif
-
-%if 0%{?suse_version} > 1110
-%define boostver 1_39_0
-%endif
-
-%if 0%{?suse_version} > 1100
-%define boostdeps libboost_regex%{boostver} libboost_program_options%{boostver} libboost_filesystem%{boostver}
-%else
-%define boostdeps boost
-%endif
-
-
-BuildRequires: %{boostdeps} boost-devel ncurses-devel gcc-c++
+BuildRequires: boost-devel ncurses-devel gcc-c++
 
 Summary: schedtop: displays scheduler statistics
 Name: schedtop
 Version: _RPM_VERSION
 License: GPL
 Release: %{rpmrel}
-Requires: %{boostdeps} ncurses
 Group: System/Monitoring
 Source: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-root
@@ -37,7 +21,6 @@ Authors
 --------------------------
   Gregory Haskins <ghaskins@novell.com>
 
-%debug_package
 %prep
 %setup
 
