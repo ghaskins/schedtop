@@ -1,10 +1,11 @@
 
-CFLAGS += -g -O0 -DBOOST_FILESYSTEM_VERSION=2
+CFLAGS += -g -O0 -DBOOST_FILESYSTEM_VERSION=3
 ARCH=$(shell uname -m)
 OBJDIR ?= obj/$(ARCH)
 LIBRARIES += -lboost_regex
-LIBRARIES += -lboost_program_options
 LIBRARIES += -lboost_filesystem
+LIBRARIES += -lboost_program_options
+LIBRARIES += -lboost_system
 LIBRARIES += -lncurses
 PREFIX ?= /usr/local
 NAME=schedtop
