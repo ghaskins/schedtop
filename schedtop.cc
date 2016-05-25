@@ -93,7 +93,7 @@ public:
 	    State state(state_version);
 	    
 	    if (!is.is_open())
-		throw std::runtime_error("could not open /proc/schedstats");
+		throw std::runtime_error("could not open /proc/schedstats (is CONFIG_SCHEDSTATS enabled?)");
 	    
 	    while(is) {
 		std::string line;
@@ -267,21 +267,21 @@ void ProcSnapshot(StatMap &smap)
     fs::directory_iterator end;
     for (fs::directory_iterator iter("/proc"); iter != end; ++iter) {
 	
-	std::string path(iter->string() + "/schedstat");
+	std::string path(iter->path().string() + "/schedstat");
 	if (fs::exists(path)) {
 	    std::ifstream is(path.c_str());
 	    
 	    if (!is.is_open())
 		throw std::runtime_error("could not open " + path);
 	    
-	    Importer importer(smap, is, iter->string() + "/");
+	    Importer importer(smap, is, iter->path().string() + "/");
 	    
 	    importer += "sched_info.cpu_time";
 	    importer += "sched_info.run_delay";
 	    importer += "sched_info.pcount";
 	}
 
-	path = iter->string() + "/sched";
+	path = iter->path().string() + "/sched";
 	if (fs::exists(path)) {
 	    std::ifstream is(path.c_str());
 	    
@@ -312,7 +312,7 @@ void ProcSnapshot(StatMap &smap)
 		    lis >> tmp;
 
 		    Importer importer(smap, lis,
-				      iter->string() + "/");
+				      iter->path().string() + "/");
 
 		    importer += type;
 		}
